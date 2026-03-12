@@ -1,112 +1,109 @@
 #include <LiquidCrystal.h>
 
-// LCD object
+// ================= LCD =================
 LiquidCrystal lcd(12, 11, 2, 3, 4, 5);
 
-// Pins
-const int conver_pin = 8;
-const int play_pin = 9;
+// ================= PIN =================
+const int PIN_SWITCH = 8;
+const int PIN_PLAY   = 9;
+const int PIN_SPEAKER = 13;
 
-const int speaker_pin = 13;
+// ================= SYSTEM STATE =================
+int currentSong = 1;
 
-// State
-int pre_song = 1;  // 1 -> Twinkle Twinkle Little Star
-				   // 2 -> Happy birthday
+int prevSwitchState = HIGH;
+int prevPlayState   = HIGH;
 
-int pre_conver = HIGH;
-int pre_play = HIGH;
+const int TEMPO = 300;
+
+// ================= SONG DATA =================
 
 // Twinkle Twinkle Little Star
-const int song_length1 = 14;
-int song_freqs1[] = {262, 262, 392, 392, 440, 440, 392, 
-                      349, 349, 329, 329, 294, 294, 262};
-int song_beats1[] = {1,   1,   1,   1,   1,   1,   2,
-                      1,   1,   1,   1,   1,   1,   2};
+const int SONG1_LENGTH = 14;
+
+int song1_freq[] = {
+262,262,392,392,440,440,392,
+349,349,329,329,294,294,262
+};
+
+int song1_beats[] = {
+1,1,1,1,1,1,2,
+1,1,1,1,1,1,2
+};
 
 // Happy Birthday
-const int song_length2 = 12;
-int song_freqs2[] = {
-    262, 262, 294, 262, 349, 330,   
-    262, 262, 294, 262, 392, 349    
-};
-int song_beats2[] = {
-    1, 1, 2, 2, 2, 4,   
-    1, 1, 2, 2, 2, 4  
+const int SONG2_LENGTH = 12;
+
+int song2_freq[] = {
+262,262,294,262,349,330,
+262,262,294,262,392,349
 };
 
-int song_tempo = 300;
+int song2_beats[] = {
+1,1,2,2,2,4,
+1,1,2,2,2,4
+};
 
+// ================= LCD FUNCTION =================
+void displaySong()
+{
+  lcd.clear();
+  lcd.setCursor(0,0);
+
+  if(currentSong == 1)
+    lcd.print("Twinkle Twinkle");
+  else
+    lcd.print("Happy Birthday");
+}
+
+// ================= PLAY MUSIC FUNCTION =================
+void playSong(int freq[], int beats[], int length)
+{
+  for(int i = 0; i < length; i++)
+  {
+    int duration = TEMPO * beats[i];
+
+    tone(PIN_SPEAKER, freq[i], duration);
+    delay(duration + 10);
+  }
+}
+
+// ================= SETUP =================
 void setup()
 {
-  pinMode(conver_pin, INPUT_PULLUP);
-  pinMode(play_pin, INPUT_PULLUP);
-  pinMode(speaker_pin, OUTPUT);
-  
-  // Initialize and clear LCD 
-  lcd.begin(16, 2);
-  lcd.clear();
-  
-  lcd.setCursor(0, 0);
-  lcd.print("Twinkle Twinkle");
+  pinMode(PIN_SWITCH, INPUT_PULLUP);
+  pinMode(PIN_PLAY, INPUT_PULLUP);
+  pinMode(PIN_SPEAKER, OUTPUT);
+
+  lcd.begin(16,2);
+  displaySong();
 }
 
+// ================= LOOP =================
 void loop()
 {
-  // Thực hiện chức năng chuyển đổi bài hát trên màn hình LCD
-  int reading_conver = digitalRead(conver_pin);
-  if(pre_conver == HIGH && reading_conver == LOW)
+  // --------- Switch Song ----------
+  int switchReading = digitalRead(PIN_SWITCH);
+
+  if(prevSwitchState == HIGH && switchReading == LOW)
   {
-    if(pre_song == 1)
-    {
-      pre_song = 2;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-  	  lcd.print("Happy Birthday");
-    }
-    else {
-      pre_song = 1;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-  	  lcd.print("Twinkle Twinkle");
-    }
+    currentSong = (currentSong == 1) ? 2 : 1;
+    displaySong();
   }
-  pre_conver = reading_conver;
-  
-  // Thực hiện chức năng phát đoạn đầu của bài hát
-  int reading_play = digitalRead(play_pin);
-  if(pre_play == HIGH && reading_play == LOW)
+
+  prevSwitchState = switchReading;
+
+
+  // --------- Play Song ----------
+  int playReading = digitalRead(PIN_PLAY);
+
+  if(prevPlayState == HIGH && playReading == LOW)
   {
-    play_music();
+    if(currentSong == 1)
+      playSong(song1_freq, song1_beats, SONG1_LENGTH);
+    else
+      playSong(song2_freq, song2_beats, SONG2_LENGTH);
   }
-  pre_play = reading_play;
+
+  prevPlayState = playReading;
 }
-
-void play_music()
-{
-  if(pre_song == 1) // CHoi bai Twinkle Twinkle
-  {
-    for(int i=0; i < song_length1; i++)
-    {
-      int duration = song_tempo * song_beats1[i];
-      tone(speaker_pin, song_freqs1[i], duration);
-      delay(duration + 10);
-    }
-  }
-  else { // Choi bai Happy Birthday
-    for(int i=0; i < song_length2; i++)
-    {
-      int duration = song_tempo * song_beats2[i];
-      tone(speaker_pin, song_freqs2[i], duration);
-      delay(duration);
-    }
-  }
-}
-
-
-
-
-
-
-
-
-
